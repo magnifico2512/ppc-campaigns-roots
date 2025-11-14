@@ -612,7 +612,34 @@ ${keywordsToAnalyze.map((kw, i) => `${i}. ${kw.keyword} (${kw.volume.toLocaleStr
 
 Task: Identify keywords that are NOT relevant to this product.
 
-RED FLAGS - Mark as irrelevant if keyword is:
+🚨 **TOP PRIORITY - BRAND NAMES** (FLAG IMMEDIATELY):
+Brand names are the #1 thing to flag! A branded keyword means the customer wants THAT SPECIFIC BRAND, not your product.
+
+**What is a brand name?**
+- Company/manufacturer names (Nike, Adidas, Amazon, IKEA, Walmart, Target, etc.)
+- Store brand names (AmazonBasics, Kirkland, Great Value, etc.)
+- Product brand names (Gorilla Grip, Yimobra, Ninja, KitchenAid, etc.)
+- Any recognizable commercial brand or trademark
+- Words that are capitalized in the middle of a keyword
+- Known brand patterns (e.g., "pro", "max", "ultra" + brand names)
+
+**Examples of BRANDED keywords to FLAG:**
+- "nike bath mat" ❌ (Nike brand)
+- "adidas yoga mat" ❌ (Adidas brand)
+- "gorilla grip bath mat" ❌ (Gorilla Grip brand)
+- "ikea bathroom accessories" ❌ (IKEA brand)
+- "amazon basics shower mat" ❌ (Amazon Basics brand)
+- "yimobra bath mat" ❌ (Yimobra brand)
+- "memory foam bath mat target" ❌ (Target store brand)
+
+**Be AGGRESSIVE with brand detection:**
+- If you recognize ANY brand name in a keyword → FLAG IT
+- If a word looks like it could be a brand (unusual capitalization, trademark-like) → FLAG IT
+- Even if the product type matches, if there's a brand name → FLAG IT
+- Brands in ANY language (English, German, etc.) → FLAG IT
+
+RED FLAGS - Also mark as irrelevant if keyword is:
+
 1. **Different product entirely**: 
    - ${context.examples}
    - Focus on PRODUCT INTENT, not just shared words
@@ -626,26 +653,20 @@ RED FLAGS - Mark as irrelevant if keyword is:
    
 4. **Different material/type**:
    - Example: Rubber vs textile, slip-resistant vs decorative
-   
-5. **Brand names** (VERY IMPORTANT):
-   - Competitor brand names (e.g., specific manufacturer names)
-   - Any recognizable brand/company names in the keyword
-   - Product names with brand identifiers
-   - Example: "nike bath mat", "adidas shower mat", "ikea bathroom mat"
-   - Look for capitalized words or known brand patterns
 
 ANALYSIS INSTRUCTIONS:
+- **BRAND DETECTION IS YOUR #1 PRIORITY** - Flag all branded keywords!
 - Understand word meanings in the keyword's language
 - Consider semantic meaning and INTENT, not just word matching
 - A keyword with 1-2 matching words is NOT enough - the overall INTENT must match
 - High search volume does NOT mean relevant!
-- Be thorough but fair
-- Pay special attention to potential brand names in keywords
+- Be thorough and aggressive with brand detection
+- Even well-known international brands should be flagged
 
 Return ONLY a valid JSON array of indices for IRRELEVANT keywords.
 Example format: [0, 5, 12, 23]
 
-Be thorough - flag anything that doesn't clearly match the product intent.`;
+Be thorough - flag ALL branded keywords and anything that doesn't clearly match the product intent.`;
 
 
                     // Call Cloudflare Worker proxy (handles CORS and API key)
