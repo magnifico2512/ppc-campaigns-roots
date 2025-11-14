@@ -286,6 +286,29 @@
                     .sort((a, b) => b.volume - a.volume);
             }, [keywords]);
 
+            // Get roots that have UNASSIGNED keywords only (for Auto-Assign feature)
+            const unassignedRoots = useMemo(() => {
+                const rootMap = new Map();
+                
+                keywords.forEach(kw => {
+                    // Only include unassigned, non-excluded keywords
+                    if (kw.excluded || kw.campaignId !== null) return;
+                    
+                    kw.roots.forEach(root => {
+                        if (!rootMap.has(root)) {
+                            rootMap.set(root, { root, count: 0, volume: 0, keywords: [] });
+                        }
+                        const stats = rootMap.get(root);
+                        stats.count++;
+                        stats.volume += kw.volume;
+                        stats.keywords.push(kw);
+                    });
+                });
+
+                return Array.from(rootMap.values())
+                    .sort((a, b) => b.volume - a.volume);
+            }, [keywords]);
+
             // Close root dropdown when clicking outside
             useEffect(() => {
                 const handleClickOutside = (event) => {
@@ -605,68 +628,61 @@
 
 ${context.note}
 
-Product Description: ${productDescription}
+YOUR PRODUCT: ${productDescription}
 
-Keywords to analyze (with search volume):
+KEYWORDS TO ANALYZE:
 ${keywordsToAnalyze.map((kw, i) => `${i}. ${kw.keyword} (${kw.volume.toLocaleString()} volume)`).join('\n')}
 
-Task: Identify keywords that are NOT relevant to this product.
+TASK: Find keywords that should be EXCLUDED because they DON'T match the product.
 
-🚨 **TOP PRIORITY - BRAND NAMES** (FLAG IMMEDIATELY):
-Brand names are the #1 thing to flag! A branded keyword means the customer wants THAT SPECIFIC BRAND, not your product.
+⚠️ CRITICAL INSTRUCTIONS:
+1. READ THE PRODUCT DESCRIPTION CAREFULLY
+2. A keyword is RELEVANT if it describes the SAME product or use case
+3. A keyword is IRRELEVANT ONLY if:
+   - It's a DIFFERENT product (e.g., yoga mat vs bath mat)
+   - It has a BRAND NAME (Nike, Adidas, IKEA, Gorilla Grip, etc.)
+   - It's for a DIFFERENT room/purpose (kitchen vs bathroom)
+   - It's a DIFFERENT category entirely
 
-**What is a brand name?**
-- Company/manufacturer names (Nike, Adidas, Amazon, IKEA, Walmart, Target, etc.)
-- Store brand names (AmazonBasics, Kirkland, Great Value, etc.)
-- Product brand names (Gorilla Grip, Yimobra, Ninja, KitchenAid, etc.)
-- Any recognizable commercial brand or trademark
-- Words that are capitalized in the middle of a keyword
-- Known brand patterns (e.g., "pro", "max", "ultra" + brand names)
+🚨 BRAND NAME DETECTION (TOP PRIORITY):
+Look for these in keywords:
+- Company/store names: Nike, Adidas, IKEA, Amazon, Target, Walmart
+- Product brands: Gorilla Grip, Yimobra, KitchenAid, etc.
+- Any recognizable trademark or brand
+- Store brands: AmazonBasics, Kirkland, Great Value
+→ If you see ANY brand name, FLAG IT as irrelevant
 
-**Examples of BRANDED keywords to FLAG:**
-- "nike bath mat" ❌ (Nike brand)
-- "adidas yoga mat" ❌ (Adidas brand)
-- "gorilla grip bath mat" ❌ (Gorilla Grip brand)
-- "ikea bathroom accessories" ❌ (IKEA brand)
-- "amazon basics shower mat" ❌ (Amazon Basics brand)
-- "yimobra bath mat" ❌ (Yimobra brand)
-- "memory foam bath mat target" ❌ (Target store brand)
+✅ KEEP KEYWORDS THAT:
+- Describe the SAME product with different words
+- Are variations of the product (different sizes, colors, features)
+- Include the product's use case or purpose
+- Match the product description
 
-**Be AGGRESSIVE with brand detection:**
-- If you recognize ANY brand name in a keyword → FLAG IT
-- If a word looks like it could be a brand (unusual capitalization, trademark-like) → FLAG IT
-- Even if the product type matches, if there's a brand name → FLAG IT
-- Brands in ANY language (English, German, etc.) → FLAG IT
+❌ EXCLUDE KEYWORDS THAT:
+- Have brand names (MOST IMPORTANT!)
+- Are completely different products
+- Are for different rooms/purposes
+- Have different primary function
 
-RED FLAGS - Also mark as irrelevant if keyword is:
+EXAMPLES:
+Product: "bath mat non slip"
+✅ KEEP: "shower mat", "bathroom mat", "tub mat", "anti slip bath mat", "bathtub mat"
+❌ EXCLUDE: "gorilla grip bath mat" (brand), "yoga mat" (different product), "kitchen mat" (different room)
 
-1. **Different product entirely**: 
-   - ${context.examples}
-   - Focus on PRODUCT INTENT, not just shared words
-   
-2. **Wrong room/location/use case**:
-   - Example: If product is for bathroom, exclude kitchen/car/office items
-   
-3. **Wrong category/purpose**:
-   - Example: Decorative items when selling functional items
-   - Example: Different sports/activities
-   
-4. **Different material/type**:
-   - Example: Rubber vs textile, slip-resistant vs decorative
+Product: "yoga mat"  
+✅ KEEP: "exercise mat", "fitness mat", "workout mat", "pilates mat"
+❌ EXCLUDE: "nike yoga mat" (brand), "bath mat" (different product), "car mat" (different category)
 
-ANALYSIS INSTRUCTIONS:
-- **BRAND DETECTION IS YOUR #1 PRIORITY** - Flag all branded keywords!
-- Understand word meanings in the keyword's language
-- Consider semantic meaning and INTENT, not just word matching
-- A keyword with 1-2 matching words is NOT enough - the overall INTENT must match
-- High search volume does NOT mean relevant!
-- Be thorough and aggressive with brand detection
-- Even well-known international brands should be flagged
+🎯 YOUR TASK FOR THIS PRODUCT:
+Product: ${productDescription}
 
-Return ONLY a valid JSON array of indices for IRRELEVANT keywords.
-Example format: [0, 5, 12, 23]
+Return ONLY a JSON array of indices for keywords that should be EXCLUDED.
+Format: [0, 5, 12, 23]
 
-Be thorough - flag ALL branded keywords and anything that doesn't clearly match the product intent.`;
+If a keyword describes the SAME type of product, DO NOT exclude it!
+Only exclude if it's clearly a different product, has a brand name, or is for a different purpose.
+
+BE CAREFUL: Don't exclude keywords just because they use different wording - they might still be the same product!`;
 
 
                     // Call Cloudflare Worker proxy (handles CORS and API key)
@@ -2496,7 +2512,7 @@ Be thorough - flag ALL branded keywords and anything that doesn't clearly match 
                                         </div>
                                         
                                         <div className="max-h-64 overflow-y-auto border border-gray-300 rounded p-3 space-y-2">
-                                            {allRoots
+                                            {unassignedRoots
                                                 .filter(rootData => 
                                                     !autoAssignRootSearch || 
                                                     rootData.root.toLowerCase().includes(autoAssignRootSearch.toLowerCase())
